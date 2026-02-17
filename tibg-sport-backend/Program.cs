@@ -28,7 +28,7 @@ builder.Services.AddControllers()
     });
 
 var corsOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>() 
-    ?? new[] { "http://localhost:4200" };
+    ?? new[] { "http://localhost:4200","https://kitchenprint-frontend.onrender.com" };
 
 builder.Services.AddCors(options =>
 {
