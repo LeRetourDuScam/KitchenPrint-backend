@@ -4,7 +4,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>tibg_sport_backend</RootNamespace>
+    <RootNamespace>KitchenPrint_backend</RootNamespace>
     <UserSecretsId>337dc540-b1c6-42be-bce4-a5b6d0b266ac</UserSecretsId>
   </PropertyGroup>
 
@@ -29,8 +29,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TIBG.Contracts\KitchenPrint.Contracts.csproj" />
-    <ProjectReference Include="..\TIBG.Core\KitchenPrint.API.Core.csproj" />
+    <ProjectReference Include="..\KitchenPrint.Contracts\KitchenPrint.Contracts.csproj" />
+    <ProjectReference Include="..\KitchenPrint.Core\KitchenPrint.API.Core.csproj" />
+    <ProjectReference Include="..\KitchenPrint.ENTITIES\KitchenPrint.ENTITIES.csproj" />
   </ItemGroup>
 
 </Project>

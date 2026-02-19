@@ -20,6 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TIBG.Models\KitchenPrint.Core.Models.csproj" />
+    <ProjectReference Include="..\KitchenPrint.Models\KitchenPrint.Core.Models.csproj" />
   </ItemGroup>
 </Project>

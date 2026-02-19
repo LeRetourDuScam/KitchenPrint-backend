@@ -28,8 +28,9 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\TIBG.Contracts\KitchenPrint.Contracts.csproj" />
-    <ProjectReference Include="..\TIBG.ENTITIES\KitchenPrint.ENTITIES.csproj" />
+    <ProjectReference Include="..\KitchenPrint.Contracts\KitchenPrint.Contracts.csproj" />
+    <ProjectReference Include="..\KitchenPrint.ENTITIES\KitchenPrint.ENTITIES.csproj" />
+    <ProjectReference Include="..\KitchenPrint.Models\KitchenPrint.Core.Models.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,24 +1,25 @@
+# CarbonFootPrint (KitchenPrint) — Backend API
+
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy project files
-COPY ["tibg-sport-backend/tibg-sport-backend.csproj", "tibg-sport-backend/"]
-COPY ["TIBG.Models/TIBG.Core.Models.csproj", "TIBG.Models/"]
-COPY ["TIBG.Core/TIBG.API.Core.csproj", "TIBG.Core/"]
-COPY ["TIBG.Contracts/TIBG.Contracts.csproj", "TIBG.Contracts/"]
-COPY ["TIBG.ENTITIES/TIBG.ENTITIES.csproj", "TIBG.ENTITIES/"]
+COPY ["KitchenPrint-backend/KitchenPrint-backend.csproj", "KitchenPrint-backend/"]
+COPY ["KitchenPrint.Models/KitchenPrint.Core.Models.csproj", "KitchenPrint.Models/"]
+COPY ["KitchenPrint.Core/KitchenPrint.API.Core.csproj", "KitchenPrint.Core/"]
+COPY ["KitchenPrint.Contracts/KitchenPrint.Contracts.csproj", "KitchenPrint.Contracts/"]
+COPY ["KitchenPrint.ENTITIES/KitchenPrint.ENTITIES.csproj", "KitchenPrint.ENTITIES/"]
 
 # Restore dependencies
-RUN dotnet restore "tibg-sport-backend/tibg-sport-backend.csproj"
+RUN dotnet restore "KitchenPrint-backend/KitchenPrint-backend.csproj"
 
 # Copy all source code
 COPY . .
 
 # Build and publish
-WORKDIR "/src/tibg-sport-backend"
-RUN dotnet build "tibg-sport-backend.csproj" -c Release -o /app/build
-RUN dotnet publish "tibg-sport-backend.csproj" -c Release -o /app/publish
+WORKDIR "/src/KitchenPrint-backend"
+RUN dotnet publish "KitchenPrint-backend.csproj" -c Release -o /app/publish
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
@@ -30,4 +31,4 @@ COPY --from=build /app/publish .
 ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Run the application
-ENTRYPOINT ["dotnet", "tibg-sport-backend.dll"]
+ENTRYPOINT ["dotnet", "KitchenPrint-backend.dll"]

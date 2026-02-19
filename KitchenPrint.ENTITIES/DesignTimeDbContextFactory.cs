@@ -16,7 +16,7 @@ namespace KitchenPrint.ENTITIES
         public kitchenPrintDbContext CreateDbContext(string[] args)
         {
             // Build configuration from the API project's directory
-            var basePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "tibg-sport-backend");
+            var basePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "KitchenPrint-backend");
             var resolvedBasePath = Directory.Exists(basePath) ? basePath : Directory.GetCurrentDirectory();
 
             var configBuilder = new ConfigurationBuilder()

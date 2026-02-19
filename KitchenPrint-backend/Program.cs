@@ -99,7 +99,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.Configure<AiSettings>(builder.Configuration.GetSection("Ai"));
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey must be configured");
+var secretKey = jwtSettings["SecretKey"] ;
 
 builder.Services.AddAuthentication(options =>
 {
