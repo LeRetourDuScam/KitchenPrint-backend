@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 namespace KitchenPrint.ENTITIES
 {
     /// <summary>
-    /// Design-time factory for CarbonFootPrint DbContext.
+    /// Design-time factory for KitchenPrint DbContext.
     /// Allows EF Core tools (Add-Migration, Update-Database) to create
     /// the DbContext without running Program.cs and its runtime dependencies (JWT, etc.).
     /// Reads connection string from: environment variables > user-secrets > appsettings.json

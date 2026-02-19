@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace KitchenPrint.ENTITIES
 {
     /// <summary>
-    /// Database context for CarbonFootprint application
+    /// Database context for KitchenPrint application
     /// Renamed from FytAiDbContext for environmental domain
     /// </summary>
     public class kitchenPrintDbContext : DbContext

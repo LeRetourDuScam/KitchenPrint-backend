@@ -93,7 +93,7 @@ namespace KitchenPrint.API.Core.DataAccess
                 _logger.LogInformation("Fetching from Open Food Facts API: {Name}", ingredientName);
 
                 var httpClient = _httpClientFactory.CreateClient();
-                httpClient.DefaultRequestHeaders.Add("User-Agent", "CarbonFootprint/1.0");
+                httpClient.DefaultRequestHeaders.Add("User-Agent", "KitchenPrint/1.0");
 
                 // Search for products matching the ingredient name
                 var searchUrl = $"https://world.openfoodfacts.org/cgi/search.pl?search_terms={Uri.EscapeDataString(ingredientName)}&search_simple=1&json=1&page_size=1";
