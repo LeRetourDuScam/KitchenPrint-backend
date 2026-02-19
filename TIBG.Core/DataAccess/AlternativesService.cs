@@ -1,14 +1,14 @@
+using KitchenPrint.API.Core.Configuration;
+using KitchenPrint.Contracts.DataAccess;
+using KitchenPrint.Core.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using TIBG.API.Core.Configuration;
-using TIBG.Contracts.DataAccess;
-using TIBG.Models;
 
-namespace TIBG.API.Core.DataAccess
+namespace KitchenPrint.API.Core.DataAccess
 {
     /// <summary>
     /// Service for suggesting ingredient alternatives using Groq AI + database lookup.

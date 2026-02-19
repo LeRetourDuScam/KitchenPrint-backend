@@ -12,11 +12,6 @@
     <None Remove="Repository\**" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\TIBG.Models\TIBG.Core.Models.csproj" />
-    <ProjectReference Include="..\TIBG.Contracts\TIBG.Contracts.csproj" />
-	  <ProjectReference Include="..\TIBG.ENTITIES\TIBG.ENTITIES.csproj" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
@@ -29,6 +24,12 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
     <PackageReference Include="Polly" Version="8.5.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\TIBG.Contracts\KitchenPrint.Contracts.csproj" />
+    <ProjectReference Include="..\TIBG.ENTITIES\KitchenPrint.ENTITIES.csproj" />
   </ItemGroup>
 
 </Project>

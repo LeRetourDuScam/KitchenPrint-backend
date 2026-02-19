@@ -1,4 +1,4 @@
-namespace TIBG.Models
+namespace KitchenPrint.Core.Models
 {
     public class AuthResponse
     {

@@ -4,22 +4,22 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using TIBG.Contracts.DataAccess;
-using TIBG.ENTITIES;
-using TIBG.Models;
 using BCrypt.Net;
+using KitchenPrint.Contracts.DataAccess;
+using KitchenPrint.Core.Models;
+using KitchenPrint.ENTITIES;
 
-namespace TIBG.API.Core.DataAccess
+namespace KitchenPrint.API.Core.DataAccess
 {
     public class AuthService : IAuthService
     {
-        private readonly FytAiDbContext _context;
+        private readonly kitchenPrintDbContext _context;
         private readonly IJwtService _jwtService;
         private readonly ILogger<AuthService> _logger;
         private readonly IConfiguration _configuration;
 
         public AuthService(
-            FytAiDbContext context, 
+            kitchenPrintDbContext context, 
             IJwtService jwtService,
             ILogger<AuthService> logger,
             IConfiguration configuration)

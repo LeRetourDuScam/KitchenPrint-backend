@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TIBG.Models\TIBG.Core.Models.csproj" />
+    <ProjectReference Include="..\TIBG.Models\KitchenPrint.Core.Models.csproj" />
   </ItemGroup>
 
 </Project>

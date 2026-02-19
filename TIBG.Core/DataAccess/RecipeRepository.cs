@@ -1,20 +1,20 @@
+using KitchenPrint.Contracts.DataAccess;
+using KitchenPrint.Core.Models;
+using KitchenPrint.ENTITIES;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using TIBG.Contracts.DataAccess;
-using TIBG.ENTITIES;
-using TIBG.Models;
 
-namespace TIBG.API.Core.DataAccess
+namespace KitchenPrint.API.Core.DataAccess
 {
     /// <summary>
     /// Repository implementation for recipe data access
     /// </summary>
     public class RecipeRepository : IRecipeRepository
     {
-        private readonly FytAiDbContext _context;
+        private readonly kitchenPrintDbContext _context;
         private readonly ILogger<RecipeRepository> _logger;
 
-        public RecipeRepository(FytAiDbContext context, ILogger<RecipeRepository> logger)
+        public RecipeRepository(kitchenPrintDbContext context, ILogger<RecipeRepository> logger)
         {
             _context = context;
             _logger = logger;

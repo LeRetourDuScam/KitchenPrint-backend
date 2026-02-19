@@ -1,9 +1,9 @@
+using KitchenPrint.Core.Models;
+using KitchenPrint.ENTITIES;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using TIBG.ENTITIES;
-using TIBG.Models;
 
-namespace TIBG.API.Core.DataAccess
+namespace KitchenPrint.API.Core.DataAccess
 {
     /// <summary>
     /// Seeds the database with comprehensive ingredient data based on Agribalyse/ADEME values.
@@ -13,7 +13,7 @@ namespace TIBG.API.Core.DataAccess
     /// </summary>
     public static class IngredientDataSeeder
     {
-        public static async Task SeedAsync(FytAiDbContext context, ILogger logger)
+        public static async Task SeedAsync(kitchenPrintDbContext context, ILogger logger)
         {
             if (await context.Ingredients.AnyAsync())
             {

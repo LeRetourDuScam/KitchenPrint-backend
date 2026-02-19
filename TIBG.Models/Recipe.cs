@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TIBG.Models
+namespace KitchenPrint.Core.Models
 {
     /// <summary>
     /// Recipe entity representing a user's recipe with environmental impact

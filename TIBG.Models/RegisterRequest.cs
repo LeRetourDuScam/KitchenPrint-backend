@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TIBG.Models
+namespace KitchenPrint.Core.Models
 {
     public class RegisterRequest
     {

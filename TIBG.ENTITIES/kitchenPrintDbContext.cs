@@ -1,15 +1,15 @@
+using KitchenPrint.Core.Models;
 using Microsoft.EntityFrameworkCore;
-using TIBG.Models;
 
-namespace TIBG.ENTITIES
+namespace KitchenPrint.ENTITIES
 {
     /// <summary>
     /// Database context for CarbonFootprint application
     /// Renamed from FytAiDbContext for environmental domain
     /// </summary>
-    public class FytAiDbContext : DbContext
+    public class kitchenPrintDbContext : DbContext
     {
-        public FytAiDbContext(DbContextOptions<FytAiDbContext> options) : base(options)
+        public kitchenPrintDbContext(DbContextOptions<kitchenPrintDbContext> options) : base(options)
         {
         }
 
@@ -23,7 +23,6 @@ namespace TIBG.ENTITIES
         public DbSet<RecipeIngredient> RecipeIngredients { get; set; }
 
         // Feedback
-        public DbSet<UserFeedback> Feedbacks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -51,21 +50,7 @@ namespace TIBG.ENTITIES
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<UserFeedback>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.UserId);
-                entity.HasIndex(e => e.RecipeId);
-                entity.HasIndex(e => e.CreatedAt);
-                entity.HasOne(e => e.Recipe)
-                    .WithMany()
-                    .HasForeignKey(e => e.RecipeId)
-                    .OnDelete(DeleteBehavior.SetNull);
-                entity.HasOne(e => e.User)
-                    .WithMany()
-                    .HasForeignKey(e => e.UserId)
-                    .OnDelete(DeleteBehavior.SetNull);
-            });
+           
 
             // Ingredient entity configuration
             modelBuilder.Entity<Ingredient>(entity =>

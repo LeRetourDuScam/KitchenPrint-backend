@@ -1,6 +1,6 @@
-using TIBG.Models;
+using KitchenPrint.Core.Models;
 
-namespace TIBG.Contracts.DataAccess
+namespace KitchenPrint.Contracts.DataAccess
 {
     /// <summary>
     /// Interface for authentication service

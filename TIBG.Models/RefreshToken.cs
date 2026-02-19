@@ -2,7 +2,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TIBG.Models
+namespace KitchenPrint.Core.Models
 {
     public class RefreshToken
     {

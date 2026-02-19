@@ -1,7 +1,8 @@
+using KitchenPrint.Core.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TIBG.Models
+namespace KitchenPrint.Core.Models
 {
     /// <summary>
     /// Junction table linking recipes to ingredients with quantities

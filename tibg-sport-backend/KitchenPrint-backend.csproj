@@ -29,8 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TIBG.Core\TIBG.API.Core.csproj" />
-    <ProjectReference Include="..\TIBG.Models\TIBG.Core.Models.csproj" />
+    <ProjectReference Include="..\TIBG.Contracts\KitchenPrint.Contracts.csproj" />
+    <ProjectReference Include="..\TIBG.Core\KitchenPrint.API.Core.csproj" />
   </ItemGroup>
 
 </Project>

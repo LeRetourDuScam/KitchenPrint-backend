@@ -1,8 +1,8 @@
+using KitchenPrint.Contracts.DataAccess;
+using KitchenPrint.Core.Models;
 using Microsoft.AspNetCore.Mvc;
-using TIBG.Contracts.DataAccess;
-using TIBG.Models;
 
-namespace tibg_sport_backend.Controllers
+namespace KitchenPrint_backend.Controllers
 {
     /// <summary>
     /// Controller for nutritional data

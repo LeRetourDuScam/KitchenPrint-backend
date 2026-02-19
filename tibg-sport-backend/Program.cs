@@ -4,16 +4,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Threading.RateLimiting;
 using System.Text;
-using TIBG.API.Core.DataAccess;
-using TIBG.API.Core.Configuration;
-using TIBG.Contracts.DataAccess;
-using TIBG.ENTITIES;
+using KitchenPrint.Contracts.DataAccess;
+using KitchenPrint.API.Core.Configuration;
+using KitchenPrint.API.Core.DataAccess;
+using KitchenPrint.Core.Models;
+using KitchenPrint.ENTITIES;
 
-var builder = WebApplication.CreateBuilder(new WebApplicationOptions
-{
-    Args = args,
-    ContentRootPath = AppContext.BaseDirectory
-});
+var builder = WebApplication.CreateBuilder(args);
 
 
 builder.Configuration.Sources
@@ -89,8 +86,8 @@ builder.Services.AddRateLimiter(options =>
     {
         context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         
-        var errorResponse = new TIBG.Models.ErrorResponse(
-            TIBG.Models.ErrorCodes.RATE_LIMIT_EXCEEDED,
+        var errorResponse = new KitchenPrint.Core.Models.ErrorResponse(
+            ErrorCodes.RATE_LIMIT_EXCEEDED,
             "Too many requests. Please wait before trying again.",
             retryAfter: 60
         );
@@ -100,7 +97,6 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.Configure<AiSettings>(builder.Configuration.GetSection("Ai"));
-builder.Services.AddHttpClient<IChatService, AiChatService>();
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey must be configured");
@@ -127,7 +123,7 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-builder.Services.AddDbContext<FytAiDbContext>(options =>
+builder.Services.AddDbContext<kitchenPrintDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("PostgreSQL");
     options.UseNpgsql(connectionString);
@@ -137,12 +133,6 @@ builder.Services.AddDbContext<FytAiDbContext>(options =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
-// Feedback Services
-builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
-builder.Services.AddScoped<IFeedbackService, FeedbackService>();
-
-// AI Chat Services
-builder.Services.AddScoped<IChatService, AiChatService>();
 
 // Carbon Footprint Services - Ingredients
 builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
@@ -167,7 +157,7 @@ var app = builder.Build();
 // Seed database with ingredient data
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<FytAiDbContext>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<kitchenPrintDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {

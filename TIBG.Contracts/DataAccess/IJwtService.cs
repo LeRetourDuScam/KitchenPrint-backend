@@ -1,4 +1,4 @@
-namespace TIBG.Contracts.DataAccess
+namespace KitchenPrint.Contracts.DataAccess
 {
     public interface IJwtService
     {

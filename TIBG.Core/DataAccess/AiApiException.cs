@@ -1,6 +1,6 @@
 using System;
 
-namespace TIBG.API.Core.DataAccess
+namespace KitchenPrint.API.Core.DataAccess
 {
     /// <summary>
     /// Represents errors when communicating with the API.

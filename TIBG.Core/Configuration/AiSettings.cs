@@ -1,4 +1,4 @@
-namespace TIBG.API.Core.Configuration
+namespace KitchenPrint.API.Core.Configuration
 {
     public class AiSettings
     {

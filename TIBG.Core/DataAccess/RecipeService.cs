@@ -1,8 +1,8 @@
+using KitchenPrint.Contracts.DataAccess;
+using KitchenPrint.Core.Models;
 using Microsoft.Extensions.Logging;
-using TIBG.Contracts.DataAccess;
-using TIBG.Models;
 
-namespace TIBG.API.Core.DataAccess
+namespace KitchenPrint.API.Core.DataAccess
 {
     /// <summary>
     /// Service for recipe calculation and management with carbon/water footprint
@@ -85,8 +85,8 @@ namespace TIBG.API.Core.DataAccess
                 {
                     foreach (var ri in recipeIngredients)
                     {
-                        ri.CarbonPercentage = (ri.CarbonContributionKg / totalCarbon) * 100m;
-                        ri.WaterPercentage = (ri.WaterContributionLiters / totalWater) * 100m;
+                        ri.CarbonPercentage = ri.CarbonContributionKg / totalCarbon * 100m;
+                        ri.WaterPercentage = ri.WaterContributionLiters / totalWater * 100m;
                     }
                 }
 
@@ -244,8 +244,8 @@ namespace TIBG.API.Core.DataAccess
                     QuantityGrams = ri.QuantityGrams,
                     CarbonContributionKg = ri.CarbonContributionKg,
                     WaterContributionLiters = ri.WaterContributionLiters,
-                    CarbonPercentage = totalCarbon > 0 ? (ri.CarbonContributionKg / totalCarbon) * 100m : 0,
-                    WaterPercentage = totalWater > 0 ? (ri.WaterContributionLiters / totalWater) * 100m : 0
+                    CarbonPercentage = totalCarbon > 0 ? ri.CarbonContributionKg / totalCarbon * 100m : 0,
+                    WaterPercentage = totalWater > 0 ? ri.WaterContributionLiters / totalWater * 100m : 0
                 }).ToList()
             };
         }

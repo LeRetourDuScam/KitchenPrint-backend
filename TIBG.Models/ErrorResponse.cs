@@ -1,6 +1,6 @@
 using System;
 
-namespace TIBG.Models
+namespace KitchenPrint.Core.Models
 {
     public class ErrorResponse
     {

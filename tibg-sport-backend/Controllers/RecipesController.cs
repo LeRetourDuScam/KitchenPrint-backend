@@ -1,10 +1,10 @@
+using KitchenPrint.Contracts.DataAccess;
+using KitchenPrint.Core.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TIBG.Contracts.DataAccess;
-using TIBG.Models;
 
-namespace tibg_sport_backend.Controllers
+namespace KitchenPrint_backend.Controllers
 {
     /// <summary>
     /// Controller for recipe calculation and management

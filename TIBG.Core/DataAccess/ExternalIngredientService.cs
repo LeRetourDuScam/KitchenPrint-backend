@@ -1,11 +1,11 @@
+using KitchenPrint.Contracts.DataAccess;
+using KitchenPrint.Core.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 using System.Text.Json;
-using TIBG.Contracts.DataAccess;
-using TIBG.Models;
 
-namespace TIBG.API.Core.DataAccess
+namespace KitchenPrint.API.Core.DataAccess
 {
     /// <summary>
     /// Service for fetching ingredient data from external APIs

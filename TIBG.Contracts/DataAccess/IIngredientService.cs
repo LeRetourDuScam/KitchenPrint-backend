@@ -1,6 +1,6 @@
-using TIBG.Models;
+using KitchenPrint.Core.Models;
 
-namespace TIBG.Contracts.DataAccess
+namespace KitchenPrint.Contracts.DataAccess
 {
     /// <summary>
     /// Service interface for ingredient business logic

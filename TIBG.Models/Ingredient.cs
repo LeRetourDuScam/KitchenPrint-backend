@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TIBG.Models
+namespace KitchenPrint.Core.Models
 {
     /// <summary>
     /// Ingredient entity with environmental impact data

@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace TIBG.Models
+namespace KitchenPrint.Core.Models
 {
     /// <summary>
     /// User entity for authentication
