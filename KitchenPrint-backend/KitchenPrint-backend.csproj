@@ -29,6 +29,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="..\seeder\AGRIBALYSE3.2_Tableur produits alimentaires_PublieAOUT25.xlsx">
+      <Link>Resources\agribalyse.xlsx</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\KitchenPrint.Contracts\KitchenPrint.Contracts.csproj" />
     <ProjectReference Include="..\KitchenPrint.Core\KitchenPrint.API.Core.csproj" />
     <ProjectReference Include="..\KitchenPrint.ENTITIES\KitchenPrint.ENTITIES.csproj" />

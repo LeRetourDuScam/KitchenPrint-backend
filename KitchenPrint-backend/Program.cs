@@ -99,7 +99,7 @@ builder.Services.AddRateLimiter(options =>
 builder.Services.Configure<AiSettings>(builder.Configuration.GetSection("Ai"));
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ;
+var secretKey = jwtSettings["SecretKey"] ?? builder.Configuration["JwtSettings:SecretKey"];
 
 builder.Services.AddAuthentication(options =>
 {
@@ -162,11 +162,13 @@ using (var scope = app.Services.CreateScope())
     try
     {
         await dbContext.Database.MigrateAsync();
-        await IngredientDataSeeder.SeedAsync(dbContext, logger);
-    }
-    catch (Exception ex)
+        var excelPath = Path.Combine(AppContext.BaseDirectory, "Resources", "agribalyse.xlsx");
+        await IngredientDataSeeder.SeedAsync(dbContext, logger, excelPath);
+    }    catch (Exception ex)
     {
-        logger.LogError(ex, "Error during database migration/seeding");
+        logger.LogWarning(ex, "KitchenPrint: Could not connect to database during startup. " +
+            "The application will start but database features will be unavailable. " +
+            "Check your network connection and ensure port 5432 is not blocked.");
     }
 }
 
