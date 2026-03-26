@@ -1,7 +1,9 @@
 using KitchenPrint.Contracts.DataAccess;
 using KitchenPrint.Core.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
 
 namespace KitchenPrint_backend.Controllers
 {
@@ -305,6 +307,123 @@ namespace KitchenPrint_backend.Controllers
                     "An error occurred while processing your request",
                     supportId: supportId
                 ));
+            }
+        }
+
+        /// <summary>
+        /// Get current user profile
+        /// </summary>
+        [HttpGet("profile")]
+        [Authorize]
+        [ProducesResponseType(typeof(UserProfileResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetProfile()
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                var profile = await _authService.GetProfileAsync(userId);
+
+                if (profile == null)
+                    return NotFound(new ErrorResponse(ErrorCodes.RESOURCE_NOT_FOUND, "User not found"));
+
+                return Ok(profile);
+            }
+            catch (Exception ex)
+            {
+                var supportId = Guid.NewGuid().ToString();
+                _logger.LogError(ex, "Error fetching profile. SupportId: {SupportId}", supportId);
+                return StatusCode(500, new ErrorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, "An error occurred", supportId: supportId));
+            }
+        }
+
+        /// <summary>
+        /// Update current user profile (username)
+        /// </summary>
+        [HttpPatch("profile")]
+        [Authorize]
+        [ProducesResponseType(typeof(UserProfileResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(new ErrorResponse(ErrorCodes.VALIDATION_FAILED, "Validation failed"));
+
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                var profile = await _authService.UpdateProfileAsync(userId, request);
+
+                if (profile == null)
+                    return NotFound(new ErrorResponse(ErrorCodes.RESOURCE_NOT_FOUND, "User not found"));
+
+                return Ok(profile);
+            }
+            catch (Exception ex)
+            {
+                var supportId = Guid.NewGuid().ToString();
+                _logger.LogError(ex, "Error updating profile. SupportId: {SupportId}", supportId);
+                return StatusCode(500, new ErrorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, "An error occurred", supportId: supportId));
+            }
+        }
+
+        /// <summary>
+        /// Change password
+        /// </summary>
+        [HttpPost("change-password")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(new ErrorResponse(ErrorCodes.VALIDATION_FAILED, "Validation failed"));
+
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                var success = await _authService.ChangePasswordAsync(userId, request);
+
+                if (!success)
+                    return BadRequest(new ErrorResponse(ErrorCodes.INVALID_CREDENTIALS, "Current password is incorrect"));
+
+                return Ok(new { message = "Password changed successfully" });
+            }
+            catch (Exception ex)
+            {
+                var supportId = Guid.NewGuid().ToString();
+                _logger.LogError(ex, "Error changing password. SupportId: {SupportId}", supportId);
+                return StatusCode(500, new ErrorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, "An error occurred", supportId: supportId));
+            }
+        }
+
+        /// <summary>
+        /// Delete account (requires password confirmation)
+        /// </summary>
+        [HttpDelete("account")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> DeleteAccount([FromBody] DeleteAccountRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(new ErrorResponse(ErrorCodes.VALIDATION_FAILED, "Validation failed"));
+
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+                var success = await _authService.DeleteAccountAsync(userId, request.Password);
+
+                if (!success)
+                    return BadRequest(new ErrorResponse(ErrorCodes.INVALID_CREDENTIALS, "Incorrect password"));
+
+                return Ok(new { message = "Account deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                var supportId = Guid.NewGuid().ToString();
+                _logger.LogError(ex, "Error deleting account. SupportId: {SupportId}", supportId);
+                return StatusCode(500, new ErrorResponse(ErrorCodes.INTERNAL_SERVER_ERROR, "An error occurred", supportId: supportId));
             }
         }
     }

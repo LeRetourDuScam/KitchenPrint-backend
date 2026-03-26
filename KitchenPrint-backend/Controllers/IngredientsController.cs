@@ -167,5 +167,24 @@ namespace KitchenPrint_backend.Controllers
                 return StatusCode(500, new { error = "An error occurred while getting suggestions" });
             }
         }
+
+        /// <summary>
+        /// Get top seasonal ingredients with lowest carbon footprint
+        /// </summary>
+        [HttpGet("seasonal")]
+        public async Task<IActionResult> GetSeasonal([FromQuery] int limit = 10)
+        {
+            try
+            {
+                if (limit < 1 || limit > 50) limit = 10;
+                var ingredients = await _ingredientService.GetSeasonalAsync(limit);
+                return Ok(new { data = ingredients });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting seasonal ingredients");
+                return StatusCode(500, new { error = "An error occurred while getting seasonal ingredients" });
+            }
+        }
     }
 }

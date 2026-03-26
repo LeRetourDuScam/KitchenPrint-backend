@@ -152,5 +152,27 @@ namespace KitchenPrint.API.Core.DataAccess
                 ApiSource = ingredient.ApiSource
             };
         }
+
+        public async Task<List<IngredientDto>> GetSeasonalAsync(int limit = 10)
+        {
+            var currentSeason = GetCurrentSeason();
+            // Search for ingredients matching current season, sorted by lowest carbon
+            var (ingredients, _) = await _repository.SearchAsync(null, null, currentSeason, 1, 100);
+
+            return ingredients
+                .OrderBy(i => i.CarbonEmissionKgPerKg)
+                .Take(limit)
+                .Select(MapToDto)
+                .ToList();
+        }
+
+        private static string GetCurrentSeason()
+        {
+            var month = DateTime.UtcNow.Month;
+            if (month >= 3 && month <= 5) return "spring";
+            if (month >= 6 && month <= 8) return "summer";
+            if (month >= 9 && month <= 11) return "fall";
+            return "winter";
+        }
     }
 }

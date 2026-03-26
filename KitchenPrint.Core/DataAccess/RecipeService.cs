@@ -154,6 +154,119 @@ namespace KitchenPrint.API.Core.DataAccess
             }
         }
 
+        public async Task<RecipeCalculationResponse?> UpdateRecipeAsync(int recipeId, int userId, RecipeCalculationRequest request)
+        {
+            try
+            {
+                var existingRecipe = await _recipeRepository.GetByIdWithIngredientsAsync(recipeId);
+                if (existingRecipe == null || existingRecipe.UserId != userId)
+                {
+                    return null;
+                }
+
+                // Recalculate impact with the new ingredients
+                var ingredientIds = request.Ingredients.Select(i => i.IngredientId).ToList();
+                var ingredients = new Dictionary<int, Ingredient>();
+                foreach (var id in ingredientIds)
+                {
+                    var ingredient = await _ingredientRepository.GetByIdAsync(id);
+                    if (ingredient == null)
+                    {
+                        throw new ArgumentException($"Ingredient with ID {id} not found");
+                    }
+                    ingredients[id] = ingredient;
+                }
+
+                var recipeIngredients = new List<RecipeIngredientDto>();
+                decimal totalCarbon = 0m;
+                decimal totalWater = 0m;
+
+                foreach (var reqIngredient in request.Ingredients)
+                {
+                    var ingredient = ingredients[reqIngredient.IngredientId];
+                    var quantityKg = reqIngredient.QuantityGrams / 1000m;
+                    var carbonContribution = quantityKg * ingredient.CarbonEmissionKgPerKg;
+                    var waterContribution = quantityKg * ingredient.WaterFootprintLitersPerKg;
+                    totalCarbon += carbonContribution;
+                    totalWater += waterContribution;
+
+                    recipeIngredients.Add(new RecipeIngredientDto
+                    {
+                        IngredientId = ingredient.Id,
+                        IngredientName = ingredient.Name,
+                        QuantityGrams = reqIngredient.QuantityGrams,
+                        CarbonContributionKg = carbonContribution,
+                        WaterContributionLiters = waterContribution,
+                        CarbonPercentage = 0,
+                        WaterPercentage = 0
+                    });
+                }
+
+                if (totalCarbon > 0)
+                {
+                    foreach (var ri in recipeIngredients)
+                    {
+                        ri.CarbonPercentage = ri.CarbonContributionKg / totalCarbon * 100m;
+                        ri.WaterPercentage = ri.WaterContributionLiters / totalWater * 100m;
+                    }
+                }
+
+                var carbonPerServing = totalCarbon / request.Servings;
+                var ecoScore = CalculateEcoScore(carbonPerServing);
+
+                // Update the existing recipe entity
+                existingRecipe.Name = request.Name;
+                existingRecipe.Description = request.Description;
+                existingRecipe.Servings = request.Servings;
+                existingRecipe.TotalCarbonKg = Math.Round(totalCarbon, 4);
+                existingRecipe.TotalWaterLiters = Math.Round(totalWater, 2);
+                existingRecipe.EcoScore = ecoScore;
+
+                // Replace recipe ingredients
+                existingRecipe.RecipeIngredients.Clear();
+                foreach (var reqIngredient in request.Ingredients)
+                {
+                    existingRecipe.RecipeIngredients.Add(new RecipeIngredient
+                    {
+                        IngredientId = reqIngredient.IngredientId,
+                        QuantityGrams = reqIngredient.QuantityGrams,
+                        CarbonContributionKg = recipeIngredients.First(i => i.IngredientId == reqIngredient.IngredientId).CarbonContributionKg,
+                        WaterContributionLiters = recipeIngredients.First(i => i.IngredientId == reqIngredient.IngredientId).WaterContributionLiters
+                    });
+                }
+
+                await _recipeRepository.UpdateAsync(existingRecipe);
+
+                var equivalents = new EnvironmentalEquivalents
+                {
+                    CarKilometers = Math.Round(totalCarbon / CO2_PER_KM_CAR, 1),
+                    SmartphoneCharges = (int)Math.Round(totalCarbon / CO2_PER_SMARTPHONE_CHARGE),
+                    Showers = (int)Math.Round(totalWater / WATER_PER_SHOWER),
+                    DaysOfDrinkingWater = Math.Round(totalWater / WATER_PER_DAY_DRINKING, 1)
+                };
+
+                _logger.LogInformation("Recipe {RecipeId} updated successfully", recipeId);
+
+                return new RecipeCalculationResponse
+                {
+                    RecipeId = existingRecipe.Id,
+                    Name = existingRecipe.Name,
+                    Description = existingRecipe.Description,
+                    Servings = existingRecipe.Servings,
+                    TotalCarbonKg = existingRecipe.TotalCarbonKg,
+                    TotalWaterLiters = existingRecipe.TotalWaterLiters,
+                    EcoScore = ecoScore,
+                    Ingredients = recipeIngredients,
+                    Equivalents = equivalents
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating recipe: {RecipeId}", recipeId);
+                throw;
+            }
+        }
+
         public async Task<RecipeDto?> GetByIdAsync(int id, int userId)
         {
             try

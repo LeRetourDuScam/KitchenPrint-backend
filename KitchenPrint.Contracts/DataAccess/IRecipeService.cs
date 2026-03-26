@@ -8,6 +8,7 @@ namespace KitchenPrint.Contracts.DataAccess
     public interface IRecipeService
     {
         Task<RecipeCalculationResponse> CalculateImpactAsync(RecipeCalculationRequest request, int? userId = null, bool saveRecipe = false);
+        Task<RecipeCalculationResponse?> UpdateRecipeAsync(int recipeId, int userId, RecipeCalculationRequest request);
         Task<RecipeDto?> GetByIdAsync(int id, int userId);
         Task<(List<RecipeDto> recipes, int totalCount)> GetUserRecipesAsync(int userId, int page, int pageSize);
         Task<bool> DeleteAsync(int id, int userId);

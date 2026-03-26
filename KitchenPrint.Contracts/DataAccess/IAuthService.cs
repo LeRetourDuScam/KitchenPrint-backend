@@ -13,5 +13,9 @@ namespace KitchenPrint.Contracts.DataAccess
         Task<bool> RevokeTokenAsync(string refreshToken, string? ipAddress = null);
         Task<User?> GetUserByIdAsync(int userId);
         Task<User?> GetUserByEmailAsync(string email);
+        Task<UserProfileResponse?> GetProfileAsync(int userId);
+        Task<UserProfileResponse?> UpdateProfileAsync(int userId, UpdateProfileRequest request);
+        Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request);
+        Task<bool> DeleteAccountAsync(int userId, string password);
     }
 }

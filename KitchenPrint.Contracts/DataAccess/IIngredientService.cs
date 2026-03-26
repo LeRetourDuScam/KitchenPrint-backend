@@ -11,5 +11,6 @@ namespace KitchenPrint.Contracts.DataAccess
         Task<IngredientListResponse> SearchAsync(IngredientSearchRequest request);
         Task<IngredientDto> CreateAsync(Ingredient ingredient);
         Task<List<IngredientDto>> SyncFromExternalApiAsync(List<string> ingredientNames);
+        Task<List<IngredientDto>> GetSeasonalAsync(int limit = 10);
     }
 }

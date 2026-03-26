@@ -158,6 +158,51 @@ namespace KitchenPrint_backend.Controllers
         }
 
         /// <summary>
+        /// Update a recipe (requires authentication and ownership)
+        /// </summary>
+        [HttpPut("{id}")]
+        [Authorize]
+        public async Task<IActionResult> Update(int id, [FromBody] RecipeCalculationRequest request)
+        {
+            try
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(userIdClaim, out var userId))
+                {
+                    return Unauthorized(new { error = "Invalid user ID" });
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    return BadRequest(new { error = "Validation failed", details = errors });
+                }
+
+                var result = await _recipeService.UpdateRecipeAsync(id, userId, request);
+
+                if (result == null)
+                {
+                    return NotFound(new { error = "Recipe not found or you don't have permission to update it" });
+                }
+
+                return Ok(new { data = result, message = "Recipe updated successfully" });
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid input for recipe update");
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating recipe: {Id}", id);
+                return StatusCode(500, new { error = "An error occurred while updating the recipe" });
+            }
+        }
+
+        /// <summary>
         /// Delete a recipe (requires authentication and ownership)
         /// </summary>
         [HttpDelete("{id}")]
