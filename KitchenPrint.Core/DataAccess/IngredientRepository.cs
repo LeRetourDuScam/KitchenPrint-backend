@@ -120,12 +120,10 @@ namespace KitchenPrint.API.Core.DataAccess
                 var ingredientsQuery = _context.Ingredients.Where(i => i.IsActive);
 
                 // Exclude composed dish categories from results
-                var excludedCategories = new[] {
-                    "plats composés", "entrees et crudites", "entrées et crudités",
-                    "sandwichs", "pizzas, quiches et pâtisseries salées", "soupes et bouillons"
-                };
                 ingredientsQuery = ingredientsQuery.Where(i =>
-                    i.Category == null || !excludedCategories.Contains(i.Category.ToLower()));
+                    i.Category == null ||
+                    !i.Category.ToLower().Contains("entrées et plats composés") &&
+                    !i.Category.ToLower().Contains("aliments infantiles"));
 
                 if (!string.IsNullOrWhiteSpace(query))
                 {

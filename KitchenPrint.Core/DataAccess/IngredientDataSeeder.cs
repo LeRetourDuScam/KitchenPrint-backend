@@ -1,21 +1,32 @@
-using ExcelDataReader;
 using KitchenPrint.API.Core.DataAccess;
 using KitchenPrint.Core.Models;
 using KitchenPrint.ENTITIES;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace KitchenPrint.API.Core.DataAccess
 {
     /// <summary>
-    /// Seeds the database with ingredient data from the AGRIBALYSE 3.2 Excel file.
-    /// CO2 values in kg CO2eq per kg of product (column 14).
-    /// Water values in m³ deprivation per kg of product (column 27), converted to liters (×1000).
-    /// Source: AGRIBALYSE 3.2 - ADEME, August 2025.
+    /// Seeds the database with ingredient data from the ADEME AGRIBALYSE REST API.
+    /// CO2 values in kg CO2eq per kg of product (Changement_climatique).
+    /// Water values in m³ deprivation per kg of product (Épuisement_des_ressources_eau), converted to liters (×1000).
+    /// Source: AGRIBALYSE 3.1 Synthèse — ADEME data-fair API.
     /// </summary>
     public static class IngredientDataSeeder
     {
-        public static async Task SeedAsync(kitchenPrintDbContext context, ILogger logger, string? excelFilePath = null)
+        private const string ApiBaseUrl = "https://data.ademe.fr/data-fair/api/v1/datasets/agribalyse-31-synthese/lines";
+        private const int PageSize = 100;
+
+        private static readonly HashSet<string> ExcludedCategories = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "entrées et plats composés",
+            "aliments infantiles"
+        };
+
+        public static async Task SeedAsync(kitchenPrintDbContext context, ILogger logger)
         {
             if (await context.Ingredients.AnyAsync())
             {
@@ -25,18 +36,23 @@ namespace KitchenPrint.API.Core.DataAccess
 
             List<Ingredient> ingredients;
 
-            if (!string.IsNullOrEmpty(excelFilePath) && File.Exists(excelFilePath))
+            try
             {
-                logger.LogInformation("Seeding ingredient database from AGRIBALYSE Excel: {Path}", excelFilePath);
-                ingredients = ParseAgribalyseExcel(excelFilePath, logger);
+                logger.LogInformation("Seeding ingredient database from ADEME AGRIBALYSE API...");
+                ingredients = await FetchFromAdemeApiAsync(logger);
             }
-            else
+            catch (Exception ex)
             {
-                logger.LogWarning("AGRIBALYSE Excel file not found at '{Path}'. Using fallback hardcoded data.", excelFilePath);
+                logger.LogWarning(ex, "Failed to fetch from ADEME API. Using fallback hardcoded data.");
                 ingredients = GetFallbackIngredients();
             }
 
-            // Ensure all ingredients have NormalizedName populated
+            if (ingredients.Count == 0)
+            {
+                logger.LogWarning("ADEME API returned no ingredients. Using fallback hardcoded data.");
+                ingredients = GetFallbackIngredients();
+            }
+
             foreach (var ingredient in ingredients)
             {
                 if (string.IsNullOrEmpty(ingredient.NormalizedName))
@@ -51,62 +67,45 @@ namespace KitchenPrint.API.Core.DataAccess
             logger.LogInformation("Seeded {Count} ingredients successfully.", ingredients.Count);
         }
 
-        private static List<Ingredient> ParseAgribalyseExcel(string filePath, ILogger logger)
+        private static async Task<List<Ingredient>> FetchFromAdemeApiAsync(ILogger logger)
         {
-            // Required for ExcelDataReader on .NET Core
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-
             var ingredients = new List<Ingredient>();
             var seenExternalIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            // Categories (Groupe d'aliment) to exclude — composed dishes, not raw ingredients/sauces
-            var excludedCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "KitchenPrint/1.0");
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+
+            var select = Uri.EscapeDataString(
+                "Code_AGB,Nom_du_Produit_en_Français,Groupe_d'aliment,Sous-groupe_d'aliment," +
+                "code_saison,code_avion,Changement_climatique,Épuisement_des_ressources_eau");
+
+            string? afterCursor = null;
+            int totalFetched = 0;
+
+            while (true)
             {
-                "plats composés",
-                "entrees et crudites",
-                "entrées et crudités",
-                "sandwichs",
-                "pizzas, quiches et pâtisseries salées",
-                "soupes et bouillons",
-                "Entrées et plats composés"
-            };
+                var url = $"{ApiBaseUrl}?size={PageSize}&select={select}";
+                if (!string.IsNullOrEmpty(afterCursor))
+                    url += $"&after={Uri.EscapeDataString(afterCursor)}";
 
-            using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            using var reader = ExcelReaderFactory.CreateReader(stream);
+                var response = await httpClient.GetAsync(url);
+                response.EnsureSuccessStatusCode();
 
-            // Navigate to the "Synthese" sheet
-            do
-            {
-                if (reader.Name == "Synthese") break;
-            } while (reader.NextResult());
+                var data = await response.Content.ReadFromJsonAsync<AdemeApiResponse>();
+                if (data?.Results == null || data.Results.Count == 0)
+                    break;
 
-            if (reader.Name != "Synthese")
-            {
-                logger.LogError("Sheet 'Synthese' not found in AGRIBALYSE Excel file.");
-                return ingredients;
-            }
-
-            // Skip 3 header rows (notices, category headers, column headers)
-            for (int i = 0; i < 3; i++) reader.Read();
-
-            int rowNumber = 3;
-            while (reader.Read())
-            {
-                rowNumber++;
-                try
+                foreach (var product in data.Results)
                 {
-                    // Col index 0: Code AGB
-                    var code = reader.GetValue(0)?.ToString()?.Trim();
-                    // Col index 4: Nom du Produit en Français
-                    var name = reader.GetValue(4)?.ToString()?.Trim();
-                    // Col index 2: Groupe d'aliment
-                    var category = reader.GetValue(2)?.ToString()?.Trim();
+                    var name = product.NomDuProduitEnFrancais?.Trim();
+                    var code = product.CodeAGB?.Trim();
+                    var category = product.GroupeAliment?.Trim();
 
                     if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(code))
                         continue;
 
-                    // Skip composed dishes — only keep raw ingredients, sauces, etc.
-                    if (!string.IsNullOrEmpty(category) && excludedCategories.Contains(category))
+                    if (!string.IsNullOrEmpty(category) && ExcludedCategories.Contains(category))
                         continue;
 
                     var externalId = "agrib_" + code;
@@ -116,26 +115,17 @@ namespace KitchenPrint.API.Core.DataAccess
                     if (!seenExternalIds.Add(externalId))
                         continue;
 
-                    // Col index 13: kg CO2 eq / kg product
-                    var carbonRaw = ToDouble(reader.GetValue(13));
-                    var carbon = (decimal)Math.Max(0, carbonRaw);
+                    var carbon = Math.Max(0, product.ChangementClimatique ?? 0m);
+                    var water = Math.Max(0, (product.EpuisementRessourcesEau ?? 0m) * 1000m);
 
-                    // Col index 26: m³ depriv. / kg product → converted to L/kg (×1000)
-                    var waterRaw = ToDouble(reader.GetValue(26));
-                    var water = (decimal)Math.Max(0, waterRaw * 1000.0);
-
-                    // Col index 6: season code — 0: hors saison, 1: de saison, 2: mix
-                    var seasonCode = (int)ToDouble(reader.GetValue(6));
-                    var season = seasonCode switch
+                    var season = product.CodeSaison switch
                     {
                         0 => "hors-saison",
                         1 => "seasonal",
                         _ => "all-year"
                     };
 
-                    // Col index 7: code avion — 1 means imported by air
-                    var avion = (int)ToDouble(reader.GetValue(7));
-                    var origin = avion == 1 ? "imported" : "national";
+                    var origin = product.CodeAvion == true ? "imported" : "national";
 
                     var categoryFormatted = string.IsNullOrEmpty(category)
                         ? "Autres"
@@ -150,35 +140,30 @@ namespace KitchenPrint.API.Core.DataAccess
                         WaterFootprintLitersPerKg = water,
                         Season = season,
                         Origin = origin,
-                        ApiSource = "Agribalyse 3.2",
+                        ApiSource = "Agribalyse 3.1",
                         ExternalId = externalId,
                         IsActive = true
                     });
                 }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "Failed to parse row {Row} from AGRIBALYSE Excel, skipping.", rowNumber);
-                }
+
+                totalFetched += data.Results.Count;
+                logger.LogInformation("Fetched {Count}/{Total} products from ADEME API...", totalFetched, data.Total);
+
+                if (data.Results.Count < PageSize)
+                    break;
+
+                afterCursor = data.Next?.Split("after=").LastOrDefault();
+                if (string.IsNullOrEmpty(afterCursor))
+                    break;
             }
 
-            logger.LogInformation("Parsed {Count} ingredients from AGRIBALYSE Excel.", ingredients.Count);
+            logger.LogInformation("Fetched {Count} ingredients from ADEME AGRIBALYSE API (excluded {Excluded}).",
+                ingredients.Count, string.Join(", ", ExcludedCategories));
             return ingredients;
         }
 
-        private static double ToDouble(object? value)
-        {
-            if (value == null) return 0;
-            if (value is double d) return d;
-            if (value is float f) return f;
-            if (value is int i) return i;
-            if (double.TryParse(value.ToString(), System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out double result))
-                return result;
-            return 0;
-        }
-
         /// <summary>
-        /// Fallback data used when the AGRIBALYSE Excel file is not available.
+        /// Fallback data used when the ADEME API is not available.
         /// Values sourced from Agribalyse 3.1.1 / ADEME Base Carbone.
         /// </summary>
         private static List<Ingredient> GetFallbackIngredients()
@@ -259,5 +244,44 @@ namespace KitchenPrint.API.Core.DataAccess
                 new() { Name = "Lait de soja", Category = "Boissons végétales", CarbonEmissionKgPerKg = 0.4m, WaterFootprintLitersPerKg = 270m, Season = "all-year", Origin = "national", ApiSource = "Agribalyse", ExternalId = "agri_soy_milk" },
             };
         }
+    }
+
+    internal class AdemeApiResponse
+    {
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("results")]
+        public List<AdemeApiProduct>? Results { get; set; }
+
+        [JsonPropertyName("next")]
+        public string? Next { get; set; }
+    }
+
+    internal class AdemeApiProduct
+    {
+        [JsonPropertyName("Code_AGB")]
+        public string? CodeAGB { get; set; }
+
+        [JsonPropertyName("Nom_du_Produit_en_Français")]
+        public string? NomDuProduitEnFrancais { get; set; }
+
+        [JsonPropertyName("Groupe_d'aliment")]
+        public string? GroupeAliment { get; set; }
+
+        [JsonPropertyName("Sous-groupe_d'aliment")]
+        public string? SousGroupeAliment { get; set; }
+
+        [JsonPropertyName("code_saison")]
+        public int? CodeSaison { get; set; }
+
+        [JsonPropertyName("code_avion")]
+        public bool? CodeAvion { get; set; }
+
+        [JsonPropertyName("Changement_climatique")]
+        public decimal? ChangementClimatique { get; set; }
+
+        [JsonPropertyName("Épuisement_des_ressources_eau")]
+        public decimal? EpuisementRessourcesEau { get; set; }
     }
 }

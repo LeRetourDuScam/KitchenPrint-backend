@@ -164,8 +164,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         await dbContext.Database.MigrateAsync();
-        var excelPath = Path.Combine(AppContext.BaseDirectory, "Resources", "agribalyse.xlsx");
-        await IngredientDataSeeder.SeedAsync(dbContext, logger, excelPath);
+        await IngredientDataSeeder.SeedAsync(dbContext, logger);
     }    catch (Exception ex)
     {
         logger.LogWarning(ex, "KitchenPrint: Could not connect to database during startup. " +
