@@ -3,6 +3,8 @@ using KitchenPrint.Core.Models;
 using KitchenPrint.ENTITIES;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
+using System.Text;
 
 namespace KitchenPrint.API.Core.DataAccess
 {
@@ -117,10 +119,19 @@ namespace KitchenPrint.API.Core.DataAccess
             {
                 var ingredientsQuery = _context.Ingredients.Where(i => i.IsActive);
 
+                // Exclude composed dish categories from results
+                var excludedCategories = new[] {
+                    "plats composés", "entrees et crudites", "entrées et crudités",
+                    "sandwichs", "pizzas, quiches et pâtisseries salées", "soupes et bouillons"
+                };
+                ingredientsQuery = ingredientsQuery.Where(i =>
+                    i.Category == null || !excludedCategories.Contains(i.Category.ToLower()));
+
                 if (!string.IsNullOrWhiteSpace(query))
                 {
-                    var searchTerm = query.ToLower();
+                    var searchTerm = RemoveDiacritics(query).ToLower();
                     ingredientsQuery = ingredientsQuery.Where(i =>
+                        (i.NormalizedName != null && i.NormalizedName.ToLower().Contains(searchTerm)) ||
                         i.Name.ToLower().Contains(searchTerm));
                 }
 
@@ -230,6 +241,30 @@ namespace KitchenPrint.API.Core.DataAccess
                 _logger.LogError(ex, "Error checking ingredient existence: {Id}", id);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Removes diacritics/accents from a string for accent-insensitive search.
+        /// E.g., "bœuf" → "boeuf", "crème" → "creme"
+        /// </summary>
+        public static string RemoveDiacritics(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+
+            // Handle ligatures first
+            text = text.Replace("œ", "oe").Replace("Œ", "Oe")
+                       .Replace("æ", "ae").Replace("Æ", "Ae");
+
+            var normalized = text.Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(normalized.Length);
+            foreach (var c in normalized)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString().Normalize(NormalizationForm.FormC);
         }
     }
 }

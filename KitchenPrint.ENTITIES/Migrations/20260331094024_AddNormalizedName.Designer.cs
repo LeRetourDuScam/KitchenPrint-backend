@@ -3,6 +3,7 @@ using System;
 using KitchenPrint.ENTITIES;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace KitchenPrint.ENTITIES.Migrations
 {
     [DbContext(typeof(kitchenPrintDbContext))]
-    partial class kitchenPrintDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260331094024_AddNormalizedName")]
+    partial class AddNormalizedName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

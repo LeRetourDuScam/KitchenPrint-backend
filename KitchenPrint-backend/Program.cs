@@ -61,10 +61,10 @@ builder.Services.AddRateLimiter(options =>
             partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: partition => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = globalRateConfig.GetValue<int>("PermitLimit", 10),
+                PermitLimit = globalRateConfig.GetValue<int>("PermitLimit", 100),
                 Window = TimeSpan.FromMinutes(globalRateConfig.GetValue<int>("WindowMinutes", 1)),
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 2
+                QueueLimit = 10
             }
         )
     );
@@ -97,6 +97,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 builder.Services.Configure<AiSettings>(builder.Configuration.GetSection("Ai"));
+builder.Services.Configure<AgribalyseSettings>(builder.Configuration.GetSection("Agribalyse"));
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"] ?? builder.Configuration["JwtSettings:SecretKey"];
@@ -145,6 +146,7 @@ builder.Services.AddScoped<IRecipeService, RecipeService>();
 
 // Alternatives & Nutrition Services
 builder.Services.AddHttpClient<IAlternativesService, AlternativesService>();
+builder.Services.AddHttpClient<IEcoChatService, EcoChatService>();
 builder.Services.AddScoped<INutritionService, NutritionService>();
 
 builder.Services.AddOpenApi();

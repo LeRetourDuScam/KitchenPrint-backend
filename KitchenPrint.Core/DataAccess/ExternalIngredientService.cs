@@ -1,9 +1,12 @@
+using KitchenPrint.API.Core.Configuration;
 using KitchenPrint.Contracts.DataAccess;
 using KitchenPrint.Core.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace KitchenPrint.API.Core.DataAccess
 {
@@ -16,6 +19,7 @@ namespace KitchenPrint.API.Core.DataAccess
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IMemoryCache _cache;
         private readonly ILogger<ExternalIngredientService> _logger;
+        private readonly AgribalyseSettings _agribalyseSettings;
 
         // Cache duration for external API results
         private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
@@ -38,11 +42,13 @@ namespace KitchenPrint.API.Core.DataAccess
         public ExternalIngredientService(
             IHttpClientFactory httpClientFactory,
             IMemoryCache cache,
-            ILogger<ExternalIngredientService> logger)
+            ILogger<ExternalIngredientService> logger,
+            IOptions<AgribalyseSettings> agribalyseSettings)
         {
             _httpClientFactory = httpClientFactory;
             _cache = cache;
             _logger = logger;
+            _agribalyseSettings = agribalyseSettings.Value;
         }
 
         public async Task<Ingredient?> GetFromAgribalyseAsync(string ingredientName)
@@ -59,17 +65,61 @@ namespace KitchenPrint.API.Core.DataAccess
 
                 _logger.LogInformation("Fetching from Agribalyse API: {Name}", ingredientName);
 
-                // Note: This is a placeholder for actual Agribalyse API integration
-                // Agribalyse data is typically accessed via their CSV files or through ADEME's API
-                // You'll need to implement the actual API call or CSV parsing here
-
                 var httpClient = _httpClientFactory.CreateClient();
+                httpClient.DefaultRequestHeaders.Add("User-Agent", "KitchenPrint/1.0");
 
-                // TODO: Implement actual Agribalyse API call
-                // For now, return null to fallback to Open Food Facts
-                _logger.LogWarning("Agribalyse API integration not yet implemented. Falling back to Open Food Facts.");
+                var url = $"{_agribalyseSettings.BaseUrl}?q={Uri.EscapeDataString(ingredientName)}&q_fields={Uri.EscapeDataString(_agribalyseSettings.SearchField)}&size={_agribalyseSettings.PageSize}";
 
-                return null;
+                var response = await httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Agribalyse API returned status: {Status}", response.StatusCode);
+                    return null;
+                }
+
+                var jsonResponse = await response.Content.ReadAsStringAsync();
+                var data = JsonSerializer.Deserialize<AgribalyseApiResponse>(jsonResponse);
+
+                if (data?.Results == null || data.Results.Count == 0)
+                {
+                    _logger.LogWarning("No products found in Agribalyse for: {Name}", ingredientName);
+                    return null;
+                }
+
+                // Pick the best match (first result from the API search)
+                var product = data.Results[0];
+
+                var carbonEmission = product.ChangementClimatique ?? 0m;
+                // Water is in m³ depriv./kg → convert to liters (×1000)
+                var waterFootprint = (product.EpuisementRessourcesEau ?? 0m) * 1000m;
+
+                var seasonValue = product.CodeSaison switch
+                {
+                    1 => "in-season",
+                    0 => "out-of-season",
+                    _ => "all-year"
+                };
+
+                var ingredient = new Ingredient
+                {
+                    Name = product.NomDuProduitEnFrancais ?? ingredientName,
+                    Category = product.GroupeAliment ?? "unknown",
+                    CarbonEmissionKgPerKg = carbonEmission,
+                    WaterFootprintLitersPerKg = waterFootprint,
+                    Season = seasonValue,
+                    Origin = product.CodeAvion == true ? "imported" : "national",
+                    ApiSource = "Agribalyse",
+                    ExternalId = $"agb_{product.CodeAGB}"
+                };
+
+                var cacheDuration = TimeSpan.FromMinutes(_agribalyseSettings.CacheDurationMinutes);
+                _cache.Set(cacheKey, ingredient, cacheDuration);
+
+                _logger.LogInformation("Successfully fetched ingredient from Agribalyse: {Name} (CO₂: {Carbon} kg, Water: {Water} L)",
+                    ingredient.Name, carbonEmission, waterFootprint);
+
+                return ingredient;
             }
             catch (Exception ex)
             {
@@ -271,5 +321,48 @@ namespace KitchenPrint.API.Core.DataAccess
         public double? fat_100g { get; set; }
         public double? fiber_100g { get; set; }
         public double? salt_100g { get; set; }
+    }
+
+    // DTOs for ADEME data-fair Agribalyse API response
+    internal class AgribalyseApiResponse
+    {
+        [JsonPropertyName("total")]
+        public int Total { get; set; }
+
+        [JsonPropertyName("results")]
+        public List<AgribalyseProduct>? Results { get; set; }
+    }
+
+    internal class AgribalyseProduct
+    {
+        [JsonPropertyName("Code_AGB")]
+        public string? CodeAGB { get; set; }
+
+        [JsonPropertyName("Groupe_d'aliment")]
+        public string? GroupeAliment { get; set; }
+
+        [JsonPropertyName("Sous-groupe_d'aliment")]
+        public string? SousGroupeAliment { get; set; }
+
+        [JsonPropertyName("Nom_du_Produit_en_Français")]
+        public string? NomDuProduitEnFrancais { get; set; }
+
+        [JsonPropertyName("LCI_Name")]
+        public string? LciName { get; set; }
+
+        [JsonPropertyName("code_saison")]
+        public int? CodeSaison { get; set; }
+
+        [JsonPropertyName("code_avion")]
+        public bool? CodeAvion { get; set; }
+
+        [JsonPropertyName("Changement_climatique")]
+        public decimal? ChangementClimatique { get; set; }
+
+        [JsonPropertyName("Épuisement_des_ressources_eau")]
+        public decimal? EpuisementRessourcesEau { get; set; }
+
+        [JsonPropertyName("Score_unique_EF")]
+        public decimal? ScoreUniqueEF { get; set; }
     }
 }

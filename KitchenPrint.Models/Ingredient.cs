@@ -60,6 +60,12 @@ namespace KitchenPrint.Core.Models
         /// </summary>
         public string? NutritionData { get; set; }
 
+        /// <summary>
+        /// Accent-normalized name for search (e.g., "boeuf" matches "bœuf")
+        /// </summary>
+        [MaxLength(200)]
+        public string? NormalizedName { get; set; }
+
         public bool IsActive { get; set; } = true;
     }
 }

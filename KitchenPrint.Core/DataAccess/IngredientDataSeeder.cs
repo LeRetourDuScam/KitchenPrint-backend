@@ -1,4 +1,5 @@
 using ExcelDataReader;
+using KitchenPrint.API.Core.DataAccess;
 using KitchenPrint.Core.Models;
 using KitchenPrint.ENTITIES;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,15 @@ namespace KitchenPrint.API.Core.DataAccess
                 ingredients = GetFallbackIngredients();
             }
 
+            // Ensure all ingredients have NormalizedName populated
+            foreach (var ingredient in ingredients)
+            {
+                if (string.IsNullOrEmpty(ingredient.NormalizedName))
+                {
+                    ingredient.NormalizedName = IngredientRepository.RemoveDiacritics(ingredient.Name).ToLower();
+                }
+            }
+
             await context.Ingredients.AddRangeAsync(ingredients);
             await context.SaveChangesAsync();
 
@@ -48,6 +58,18 @@ namespace KitchenPrint.API.Core.DataAccess
 
             var ingredients = new List<Ingredient>();
             var seenExternalIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Categories (Groupe d'aliment) to exclude — composed dishes, not raw ingredients/sauces
+            var excludedCategories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "plats composés",
+                "entrees et crudites",
+                "entrées et crudités",
+                "sandwichs",
+                "pizzas, quiches et pâtisseries salées",
+                "soupes et bouillons",
+                "Entrées et plats composés"
+            };
 
             using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             using var reader = ExcelReaderFactory.CreateReader(stream);
@@ -81,6 +103,10 @@ namespace KitchenPrint.API.Core.DataAccess
                     var category = reader.GetValue(2)?.ToString()?.Trim();
 
                     if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(code))
+                        continue;
+
+                    // Skip composed dishes — only keep raw ingredients, sauces, etc.
+                    if (!string.IsNullOrEmpty(category) && excludedCategories.Contains(category))
                         continue;
 
                     var externalId = "agrib_" + code;
@@ -118,6 +144,7 @@ namespace KitchenPrint.API.Core.DataAccess
                     ingredients.Add(new Ingredient
                     {
                         Name = name.Length > 200 ? name[..200] : name,
+                        NormalizedName = IngredientRepository.RemoveDiacritics(name.Length > 200 ? name[..200] : name).ToLower(),
                         Category = categoryFormatted.Length > 100 ? categoryFormatted[..100] : categoryFormatted,
                         CarbonEmissionKgPerKg = carbon,
                         WaterFootprintLitersPerKg = water,

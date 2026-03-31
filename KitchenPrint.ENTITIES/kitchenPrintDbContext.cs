@@ -57,6 +57,7 @@ namespace KitchenPrint.ENTITIES
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Name);
+                entity.HasIndex(e => e.NormalizedName);
                 entity.HasIndex(e => e.Category);
                 entity.HasIndex(e => e.ExternalId).IsUnique();
                 entity.Property(e => e.Name).IsRequired();
